@@ -1,3 +1,4 @@
+"use strict";
 // Raw Facebook Page Graph API calls (organic Page Insights — not Meta Ads).
 // Mirrors instagram-api.ts: every call throws IgApiError on API-level errors,
 // and every metric is fetched in its own request so one rejected/deprecated
@@ -17,13 +18,20 @@
 // be one of the following values..."), Meta has deprecated/renamed it for
 // that Page — check https://developers.facebook.com/docs/graph-api/reference/page/insights
 // and adjust here, same as every dated comment in instagram-api.ts.
-import { graphBatch } from "./instagram-api";
-import { graphFetch } from "./graph-fetch";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getFbPageInfo = getFbPageInfo;
+exports.getFbPageInsights = getFbPageInsights;
+exports.getFbPagePosts = getFbPagePosts;
+exports.getFbPageAudience = getFbPageAudience;
+exports.getFbPostInsightsBatch = getFbPostInsightsBatch;
+exports.getFbPostEngagementBatch = getFbPostEngagementBatch;
+const instagram_api_1 = require("./instagram-api");
+const graph_fetch_1 = require("./graph-fetch");
 const FB_API = "https://graph.facebook.com/v21.0";
 // ─── Helpers ────────────────────────────────────────────────────────────────────
-const fbFetch = graphFetch;
+const fbFetch = graph_fetch_1.graphFetch;
 // ─── Page Info ──────────────────────────────────────────────────────────────────
-export async function getFbPageInfo(pageId, pageAccessToken) {
+async function getFbPageInfo(pageId, pageAccessToken) {
     const fields = "id,name,category,fan_count,picture.type(large)";
     const enc = encodeURIComponent(pageAccessToken);
     const url = `${FB_API}/${pageId}?fields=${fields}&access_token=${enc}`;
@@ -48,7 +56,7 @@ export async function getFbPageInfo(pageId, pageAccessToken) {
  * para `page_media_view`/`page_total_media_view_unique` — confirmado pela
  * mesma fonte.
  */
-export async function getFbPageInsights(pageId, pageAccessToken, since, until) {
+async function getFbPageInsights(pageId, pageAccessToken, since, until) {
     const sinceTs = Math.floor(new Date(since + "T00:00:00Z").getTime() / 1000);
     const untilTs = Math.floor(new Date(until + "T23:59:59Z").getTime() / 1000);
     const enc = encodeURIComponent(pageAccessToken);
@@ -78,7 +86,7 @@ export async function getFbPageInsights(pageId, pageAccessToken, since, until) {
     return { series, errors };
 }
 // ─── Posts ──────────────────────────────────────────────────────────────────────
-export async function getFbPagePosts(pageId, pageAccessToken, since, until, maxItems = 50) {
+async function getFbPagePosts(pageId, pageAccessToken, since, until, maxItems = 50) {
     // `likes.summary(true)`/`comments.summary(true)` são pedidos à parte, via
     // getFbPostEngagementBatch — confirmado ao vivo em produção (2026-08-14,
     // cliente Kimak) que a Graph API rejeita QUALQUER um dos dois com
@@ -121,7 +129,7 @@ export async function getFbPagePosts(pageId, pageAccessToken, since, until, maxI
  * mais solicitada aqui, e a seção "Faixa etária" não aparece para Facebook
  * na UI (só para Instagram, que ainda tem follower_demographics).
  */
-export async function getFbPageAudience(pageId, pageAccessToken) {
+async function getFbPageAudience(pageId, pageAccessToken) {
     const enc = encodeURIComponent(pageAccessToken);
     const metrics = ["page_follows_city", "page_follows_country"];
     const url = `${FB_API}/${pageId}/insights?metric=${metrics.join(",")}&period=lifetime&access_token=${enc}`;
@@ -155,10 +163,10 @@ export async function getFbPageAudience(pageId, pageAccessToken) {
  * sempre `undefined` agora; o resto do pipeline já trata isso como "não
  * disponível" (nunca um falso 0) — ver getFacebookDashboardData/SocialMediaView.
  */
-export async function getFbPostInsightsBatch(postIds, pageAccessToken) {
+async function getFbPostInsightsBatch(postIds, pageAccessToken) {
     // post_impressions → post_media_view, mesma leva de renomeação de
     // page_impressions → page_media_view (ver getFbPageInsights acima).
-    const results = await graphBatch(pageAccessToken, postIds.map((id) => `${id}/insights?metric=post_media_view`));
+    const results = await (0, instagram_api_1.graphBatch)(pageAccessToken, postIds.map((id) => `${id}/insights?metric=post_media_view`));
     const map = new Map();
     postIds.forEach((id, i) => {
         const raw = results[i]?.data;
@@ -186,8 +194,8 @@ export async function getFbPostInsightsBatch(postIds, pageAccessToken) {
  * graphBatch, que já isola falha por item), nunca a página inteira de
  * Publicações.
  */
-export async function getFbPostEngagementBatch(postIds, pageAccessToken) {
-    const results = await graphBatch(pageAccessToken, postIds.map((id) => `${id}?fields=likes.summary(true),comments.summary(true)`));
+async function getFbPostEngagementBatch(postIds, pageAccessToken) {
+    const results = await (0, instagram_api_1.graphBatch)(pageAccessToken, postIds.map((id) => `${id}?fields=likes.summary(true),comments.summary(true)`));
     const map = new Map();
     postIds.forEach((id, i) => {
         const raw = results[i];

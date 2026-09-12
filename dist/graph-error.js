@@ -1,3 +1,4 @@
+"use strict";
 // Shared error classification for every Graph API call (Facebook Ads, Facebook
 // Page Insights, Instagram) — see "Facebook Graph API — Architecture Review"
 // (DASH B2DCOM/03 Arquitetura/) for the full audit this implements §3.1.
@@ -8,7 +9,16 @@
 // way to act differently on an expired token vs. a rate limit vs. a
 // permission ceiling. classifyGraphError() is the single place that decision
 // gets made, so recovery logic (graph-recovery.ts) never has to re-derive it.
-export class GraphApiError extends Error {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GraphApiError = void 0;
+exports.parseRateLimitHeaders = parseRateLimitHeaders;
+exports.isApproachingRateLimit = isApproachingRateLimit;
+exports.classifyGraphError = classifyGraphError;
+exports.isTokenInvalid = isTokenInvalid;
+exports.isRateLimited = isRateLimited;
+exports.isPermissionError = isPermissionError;
+exports.withRateLimitBackoff = withRateLimitBackoff;
+class GraphApiError extends Error {
     code;
     subcode;
     httpStatus;
@@ -20,6 +30,7 @@ export class GraphApiError extends Error {
         this.name = "GraphApiError";
     }
 }
+exports.GraphApiError = GraphApiError;
 // ─── Meta's own error code reference ───────────────────────────────────────
 // https://developers.facebook.com/docs/graph-api/guides/error-handling
 //
@@ -44,7 +55,7 @@ function normalizeUsage(raw) {
         return null;
     return { callCount: raw.call_count, totalCputime: raw.total_cputime, totalTime: raw.total_time };
 }
-export function parseRateLimitHeaders(headers) {
+function parseRateLimitHeaders(headers) {
     // X-App-Usage is a flat object: {"call_count":28,"total_cputime":25,"total_time":25}
     const appUsage = headers.get("x-app-usage");
     if (appUsage) {
@@ -73,7 +84,7 @@ export function parseRateLimitHeaders(headers) {
     return null;
 }
 /** True once any usage bucket crosses this percentage — matches the ~79% the app already hit once (see Bug-Consumo-Excessivo-Meta-API-79-Porcento). */
-export function isApproachingRateLimit(usage, thresholdPct = 80) {
+function isApproachingRateLimit(usage, thresholdPct = 80) {
     if (!usage)
         return false;
     return [usage.callCount, usage.totalCputime, usage.totalTime].some((v) => typeof v === "number" && v >= thresholdPct);
@@ -90,7 +101,7 @@ function extractScopeFromMessage(message) {
     const match = message.match(/'([a-z_]+)'\s+permission/i) ?? message.match(/permission\s+'([a-z_]+)'/i);
     return match?.[1] ?? null;
 }
-export function classifyGraphError(err, grantedScopes) {
+function classifyGraphError(err, grantedScopes) {
     if (!(err instanceof GraphApiError))
         return "TRANSIENT";
     if (err.httpStatus === 429)
@@ -117,13 +128,13 @@ export function classifyGraphError(err, grantedScopes) {
     }
     return "UNKNOWN";
 }
-export function isTokenInvalid(err) {
+function isTokenInvalid(err) {
     return classifyGraphError(err) === "TOKEN_INVALID";
 }
-export function isRateLimited(err) {
+function isRateLimited(err) {
     return classifyGraphError(err) === "RATE_LIMITED";
 }
-export function isPermissionError(err) {
+function isPermissionError(err) {
     const cls = classifyGraphError(err);
     return cls === "PERMISSION_MISSING_SCOPE" || cls === "PERMISSION_ADVANCED_ACCESS";
 }
@@ -139,7 +150,7 @@ export function isPermissionError(err) {
  * circular import (graph-recovery.ts depends on instagram-api.ts, which
  * depends on graph-fetch.ts).
  */
-export async function withRateLimitBackoff(fn, opts = {}) {
+async function withRateLimitBackoff(fn, opts = {}) {
     const maxAttempts = opts.maxAttempts ?? 3;
     const baseDelayMs = opts.baseDelayMs ?? 2000;
     let lastErr;

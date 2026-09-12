@@ -1,3 +1,4 @@
+"use strict";
 /**
  * GA4 Query Planner
  *
@@ -16,6 +17,8 @@
  *
  * No other component should know about these API constraints.
  */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ga4QueryPlanner = void 0;
 // ═══════════════════════════════════════════════════════════════════════════════
 // GA4 Query Planner Implementation
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -171,5 +174,5 @@ class QueryPlanner {
     }
 }
 // Export singleton instance
-export const ga4QueryPlanner = new QueryPlanner();
+exports.ga4QueryPlanner = new QueryPlanner();
 //# sourceMappingURL=ga4-query-planner.js.map

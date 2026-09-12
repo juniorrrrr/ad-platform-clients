@@ -1,3 +1,4 @@
+"use strict";
 // Single HTTP layer for every Graph API call (Facebook Ads discovery,
 // Facebook Page Insights, Instagram) — replaces the two near-identical
 // `igFetch`/`fbFetch` implementations that used to live separately in
@@ -6,7 +7,10 @@
 // kept in sync in both places). Every caller gets the same GraphApiError
 // shape (code + subcode + httpStatus), which is what classifyGraphError()
 // needs to work at all.
-import { GraphApiError, parseRateLimitHeaders, withRateLimitBackoff, } from "./graph-error";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.graphFetchWithMeta = graphFetchWithMeta;
+exports.graphFetch = graphFetch;
+const graph_error_1 = require("./graph-error");
 /**
  * Fetches a Graph API URL and throws GraphApiError on any API-level or
  * HTTP-level failure. Callers that only need the payload can use
@@ -18,21 +22,21 @@ import { GraphApiError, parseRateLimitHeaders, withRateLimitBackoff, } from "./g
  * actually gives fragile point #6 (no rate-limit handling anywhere) a real
  * fix, instead of leaving it as a utility nothing calls.
  */
-export async function graphFetchWithMeta(url, init) {
-    return withRateLimitBackoff(async () => {
+async function graphFetchWithMeta(url, init) {
+    return (0, graph_error_1.withRateLimitBackoff)(async () => {
         const res = await fetch(url, init);
         const json = (await res.json());
-        const rateLimit = parseRateLimitHeaders(res.headers);
+        const rateLimit = (0, graph_error_1.parseRateLimitHeaders)(res.headers);
         if (json.error) {
-            throw new GraphApiError(json.error.message, json.error.code ?? 0, json.error.error_subcode, res.status);
+            throw new graph_error_1.GraphApiError(json.error.message, json.error.code ?? 0, json.error.error_subcode, res.status);
         }
         if (!res.ok) {
-            throw new GraphApiError(`HTTP ${res.status}`, 0, undefined, res.status);
+            throw new graph_error_1.GraphApiError(`HTTP ${res.status}`, 0, undefined, res.status);
         }
         return { data: json, rateLimit };
     });
 }
-export async function graphFetch(url, init) {
+async function graphFetch(url, init) {
     return (await graphFetchWithMeta(url, init)).data;
 }
 //# sourceMappingURL=graph-fetch.js.map

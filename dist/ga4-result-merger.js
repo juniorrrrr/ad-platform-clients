@@ -1,3 +1,4 @@
+"use strict";
 /**
  * GA4 Result Merger
  *
@@ -14,10 +15,12 @@
  * Key principle: The mapper receives exactly the same object structure
  * as it would have from a single query. Zero changes needed downstream.
  */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ga4ResultMerger = exports.GA4ResultMerger = void 0;
 // ═══════════════════════════════════════════════════════════════════════════════
 // Merger Implementation
 // ═══════════════════════════════════════════════════════════════════════════════
-export class GA4ResultMerger {
+class GA4ResultMerger {
     /**
      * Merge results from multiple queries into a single response.
      *
@@ -232,5 +235,6 @@ export class GA4ResultMerger {
         }
     }
 }
-export const ga4ResultMerger = new GA4ResultMerger();
+exports.GA4ResultMerger = GA4ResultMerger;
+exports.ga4ResultMerger = new GA4ResultMerger();
 //# sourceMappingURL=ga4-result-merger.js.map

@@ -1,15 +1,24 @@
+"use strict";
 // Raw Instagram Graph API calls.
 // All functions throw on non-OK HTTP or API-level errors.
-import { graphFetch } from "./graph-fetch";
-import { GraphApiError, withRateLimitBackoff } from "./graph-error";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.IgApiError = void 0;
+exports.graphBatch = graphBatch;
+exports.listLinkedPages = listLinkedPages;
+exports.getIgAccountInfo = getIgAccountInfo;
+exports.getIgAccountInfoBatch = getIgAccountInfoBatch;
+exports.getIgAccountInsights = getIgAccountInsights;
+exports.getIgMedia = getIgMedia;
+exports.getIgStories = getIgStories;
+exports.getMediaInsightsBatch = getMediaInsightsBatch;
+exports.getIgAudience = getIgAudience;
+exports.getOnlineFollowers = getOnlineFollowers;
+const graph_fetch_1 = require("./graph-fetch");
+const graph_error_1 = require("./graph-error");
+Object.defineProperty(exports, "IgApiError", { enumerable: true, get: function () { return graph_error_1.GraphApiError; } });
 const IG_API = "https://graph.facebook.com/v21.0";
 // ─── Helpers ────────────────────────────────────────────────────────────────────
-const igFetch = graphFetch;
-// Kept as an alias so existing call sites (and their `instanceof` checks)
-// keep working — the class itself now lives in graph-error.ts, shared with
-// facebook-api.ts, so error classification (classifyGraphError) has one
-// vocabulary instead of two near-identical error types.
-export { GraphApiError as IgApiError };
+const igFetch = graph_fetch_1.graphFetch;
 /** Follows `paging.next` so accounts with >100 pages don't silently lose the tail. */
 async function paginatedIgFetch(url) {
     const out = [];
@@ -38,13 +47,13 @@ async function paginatedIgFetch(url) {
  * exact same permissions: it depended on how many Business Managers the
  * token's identity belongs to, not on what they're allowed to see.
  */
-export async function graphBatch(accessToken, relativeUrls) {
+async function graphBatch(accessToken, relativeUrls) {
     const chunks = [];
     for (let i = 0; i < relativeUrls.length; i += 50)
         chunks.push(relativeUrls.slice(i, i + 50));
     // Chunks are independent batch calls — run them concurrently (still just
     // ceil(N/50) subrequests total, only the wall-clock time improves).
-    const chunkResults = await Promise.all(chunks.map((chunk) => withRateLimitBackoff(async () => {
+    const chunkResults = await Promise.all(chunks.map((chunk) => (0, graph_error_1.withRateLimitBackoff)(async () => {
         const res = await fetch(IG_API, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -55,7 +64,7 @@ export async function graphBatch(accessToken, relativeUrls) {
         });
         const json = (await res.json());
         if (!Array.isArray(json)) {
-            throw new GraphApiError(json.error?.message ?? `Batch request failed (HTTP ${res.status})`, json.error?.code ?? 0, json.error?.error_subcode, res.status);
+            throw new graph_error_1.GraphApiError(json.error?.message ?? `Batch request failed (HTTP ${res.status})`, json.error?.code ?? 0, json.error?.error_subcode, res.status);
         }
         return json.map((item) => {
             if (!item || item.code !== 200)
@@ -115,7 +124,7 @@ async function listOwnedBusinesses(accessToken) {
  * HTTP call instead of one call each. Same fields, same edges, same merge —
  * only the transport changed from N requests to ceil(N/50).
  */
-export async function listLinkedPages(accessToken) {
+async function listLinkedPages(accessToken) {
     const enc = encodeURIComponent(accessToken);
     const directPages = await paginatedIgFetch(`${IG_API}/me/accounts?fields=id,name,instagram_business_account,access_token,tasks&limit=100&access_token=${enc}`);
     const warnings = [];
@@ -155,7 +164,7 @@ export async function listLinkedPages(accessToken) {
     return { pages: [...byId.values()], warnings };
 }
 // ─── Account Info ────────────────────────────────────────────────────────────────
-export async function getIgAccountInfo(igAccountId, accessToken) {
+async function getIgAccountInfo(igAccountId, accessToken) {
     const fields = "id,name,username,profile_picture_url,followers_count,media_count,biography,website";
     const enc = encodeURIComponent(accessToken);
     const url = `${IG_API}/${igAccountId}?fields=${fields}&access_token=${enc}`;
@@ -169,7 +178,7 @@ export async function getIgAccountInfo(igAccountId, accessToken) {
  * Returns a Map so callers can look up by id and fall back per-account
  * (a single account's failure must not drop the others).
  */
-export async function getIgAccountInfoBatch(igAccountIds, accessToken) {
+async function getIgAccountInfoBatch(igAccountIds, accessToken) {
     const fields = "id,name,username,profile_picture_url,followers_count,media_count,biography,website";
     const results = await graphBatch(accessToken, igAccountIds.map((id) => `${id}?fields=${fields}`));
     const map = new Map();
@@ -181,7 +190,7 @@ export async function getIgAccountInfoBatch(igAccountIds, accessToken) {
     return map;
 }
 // ─── Account Insights (time series) ─────────────────────────────────────────────
-export async function getIgAccountInsights(igAccountId, accessToken, since, until) {
+async function getIgAccountInsights(igAccountId, accessToken, since, until) {
     // `impressions`, `email_contacts`, `phone_call_clicks` and `text_message_clicks`
     // are confirmed rejected by the Graph API for this account's User Insights
     // ("(#100) metric[0] must be one of the following values: reach, follower_count,
@@ -321,7 +330,7 @@ export async function getIgAccountInsights(igAccountId, accessToken, since, unti
     return allSeries;
 }
 // ─── Media List ──────────────────────────────────────────────────────────────────
-export async function getIgMedia(igAccountId, accessToken, since, until, maxItems = 100) {
+async function getIgMedia(igAccountId, accessToken, since, until, maxItems = 100) {
     const fields = "id,media_type,timestamp,caption,thumbnail_url,media_url,permalink";
     const sinceTs = Math.floor(new Date(since + "T00:00:00Z").getTime() / 1000);
     const untilTs = Math.floor(new Date(until + "T23:59:59Z").getTime() / 1000);
@@ -338,7 +347,7 @@ export async function getIgMedia(igAccountId, accessToken, since, until, maxItem
     return allMedia.slice(0, maxItems);
 }
 // ─── Stories ────────────────────────────────────────────────────────────────────
-export async function getIgStories(igAccountId, accessToken) {
+async function getIgStories(igAccountId, accessToken) {
     const fields = "id,media_type,timestamp,caption,thumbnail_url,media_url,permalink";
     const enc = encodeURIComponent(accessToken);
     const url = `${IG_API}/${igAccountId}/stories?fields=${fields}&limit=100&access_token=${enc}`;
@@ -381,7 +390,7 @@ function mediaInsightsMetrics(mediaType, createdAt) {
  * a single item's insights failing (private/restricted media, transient
  * error) returns no entry for that id, never drops the whole batch.
  */
-export async function getMediaInsightsBatch(items, accessToken) {
+async function getMediaInsightsBatch(items, accessToken) {
     const results = await graphBatch(accessToken, items.map((item) => `${item.id}/insights?metric=${mediaInsightsMetrics(item.mediaType, item.createdAt)}`));
     const map = new Map();
     items.forEach((item, i) => {
@@ -412,7 +421,7 @@ async function fetchFollowerDemographic(igAccountId, accessToken, breakdown) {
         return [];
     }
 }
-export async function getIgAudience(igAccountId, accessToken) {
+async function getIgAudience(igAccountId, accessToken) {
     const [genderAge, city, country] = await Promise.all([
         fetchFollowerDemographic(igAccountId, accessToken, "gender,age"),
         fetchFollowerDemographic(igAccountId, accessToken, "city"),
@@ -442,7 +451,7 @@ export async function getIgAudience(igAccountId, accessToken) {
     return entries;
 }
 // ─── Online Followers (activity by hour) ─────────────────────────────────────────
-export async function getOnlineFollowers(igAccountId, accessToken) {
+async function getOnlineFollowers(igAccountId, accessToken) {
     const enc = encodeURIComponent(accessToken);
     const url = `${IG_API}/${igAccountId}/insights?metric=online_followers&period=lifetime&access_token=${enc}`;
     try {

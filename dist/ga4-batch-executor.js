@@ -1,3 +1,4 @@
+"use strict";
 /**
  * GA4 Batch Executor
  *
@@ -10,6 +11,8 @@
  * Takes a GA4QueryPlan and executes all queries, hiding the multiplicity
  * from callers. Results are returned in a format ready for merging.
  */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ga4BatchExecutor = exports.GA4BatchExecutor = void 0;
 const DEFAULT_OPTIONS = {
     maxRetries: 3,
     retryDelayMs: 1000,
@@ -18,7 +21,7 @@ const DEFAULT_OPTIONS = {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Batch Executor Implementation
 // ═══════════════════════════════════════════════════════════════════════════════
-export class GA4BatchExecutor {
+class GA4BatchExecutor {
     GA4_DATA_BASE = "https://analyticsdata.googleapis.com/v1beta";
     options;
     constructor(options = {}) {
@@ -167,5 +170,6 @@ export class GA4BatchExecutor {
         ].join(" | ");
     }
 }
-export const ga4BatchExecutor = new GA4BatchExecutor();
+exports.GA4BatchExecutor = GA4BatchExecutor;
+exports.ga4BatchExecutor = new GA4BatchExecutor();
 //# sourceMappingURL=ga4-batch-executor.js.map
