@@ -1,0 +1,24 @@
+{
+  "name": "@b2dcom/ad-platform-clients",
+  "version": "0.1.0",
+  "description": "Cliente HTTP tipado para Meta Graph API (Instagram/Facebook) e GA4 Data API — sem dependência de banco, tenant ou UI. Compartilhado entre B2DCOM Internal e Vision Dash.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  }
+}
