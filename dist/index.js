@@ -32,4 +32,5 @@ __exportStar(require("./facebook-api"), exports);
 __exportStar(require("./ga4-query-planner"), exports);
 __exportStar(require("./ga4-batch-executor"), exports);
 __exportStar(require("./ga4-result-merger"), exports);
+__exportStar(require("./meta-accounts"), exports);
 //# sourceMappingURL=index.js.map
